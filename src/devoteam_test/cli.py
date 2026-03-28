@@ -30,6 +30,16 @@ def _default_paths() -> tuple[Path, Path]:
     return rapport, thresholds
 
 
+def _resolve_output_destination() -> Path | None:
+    raw = os.environ.get("OUTPUT_PATH")
+    if raw is None:
+        return Path.cwd() / "pipeline_output.json"
+    stripped = raw.strip()
+    if stripped == "-":
+        return None
+    return Path(stripped)
+
+
 def _global_summary(rows_analyzed: int, reports: list[LineReport]) -> str:
     n_reports = len(reports)
     nominal = rows_analyzed - n_reports
@@ -82,8 +92,14 @@ def main() -> None:
         reports=reports,
         global_summary=_global_summary(rows_analyzed, reports),
     )
-    sys.stdout.write(agg.model_dump_json(indent=2, ensure_ascii=False))
-    sys.stdout.write("\n")
+    payload = agg.model_dump_json(indent=2, ensure_ascii=False) + "\n"
+    out_dest = _resolve_output_destination()
+    if out_dest is None:
+        sys.stdout.write(payload)
+    else:
+        out_dest.parent.mkdir(parents=True, exist_ok=True)
+        out_dest.write_text(payload, encoding="utf-8")
+        logger.info("Rapport écrit dans %s", out_dest.resolve())
 
 
 if __name__ == "__main__":

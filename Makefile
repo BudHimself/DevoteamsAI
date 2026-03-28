@@ -11,7 +11,7 @@ sync: ## Installer les dépendances (uv sync)
 	$(UV) sync --all-groups
 
 .PHONY: run
-run: ## Exécuter le pipeline sur rapport.json (variable RAPPORT_PATH pour surcharger)
+run: ## Exécuter le pipeline (sortie dans OUTPUT_PATH, défaut pipeline_output.json)
 	$(UV) run devoteam-pipeline
 
 .PHONY: lint
