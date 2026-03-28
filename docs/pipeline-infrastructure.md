@@ -22,7 +22,7 @@ flowchart LR
 1. **ingest** : validation Pydantic d’une mesure (`MetricSnapshot`).
 2. **detect** : comparaison aux seuils du fichier [`config/thresholds.yaml`](../config/thresholds.yaml) (métriques numériques + états de services).
 3. **Routage** : si `len(anomalies) > 1` → branche **LLM** ; sinon → branche **règles**.
-4. **LLM** : appel OpenAI-compatible vers `https://openrouter.ai/api/v1` avec sortie structurée (résumé + liste d’actions). Si la clé API est absente ou en cas d’erreur, **repli automatique** sur les mêmes règles que la branche « règles ».
+4. **LLM** : appel OpenAI-compatible vers `https://openrouter.ai/api/v1` ; la réponse est interprétée comme JSON (objet `summary` + `recommendations`, éventuellement dans un bloc Markdown). Si le parsing échoue ou si la clé API est absente, **repli** sur les règles déterministes.
 5. **report** : construction d’un [`LineReport`](../src/devoteam_test/models/report.py) par ligne.
 6. **CLI** : boucle sur tout le tableau JSON ; sortie agrégée [`AggregatedPipelineOutput`](../src/devoteam_test/models/report.py) : seules les **lignes avec au moins une anomalie** apparaissent dans `reports` (les mesures nominales sont traitées mais omises pour réduire le volume). Le champ `rows_analyzed` indique le nombre total de lignes lues.
 

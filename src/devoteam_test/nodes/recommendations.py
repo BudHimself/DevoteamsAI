@@ -1,11 +1,12 @@
 import json
 import logging
 import os
+import re
 from typing import Any, Literal, cast
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from devoteam_test.models.anomaly import Anomaly
 from devoteam_test.models.snapshot import MetricSnapshot
@@ -77,6 +78,35 @@ class LlmRecommendationPayload(BaseModel):
     )
 
 
+def _parse_llm_json_content(content: str) -> LlmRecommendationPayload | None:
+    text = content.strip()
+    fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
+    if fence:
+        text = fence.group(1).strip()
+    decoder = json.JSONDecoder()
+    for start_char in ("{", "["):
+        pos = text.find(start_char)
+        if pos < 0:
+            continue
+        try:
+            obj, _ = decoder.raw_decode(text[pos:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict):
+            try:
+                return LlmRecommendationPayload.model_validate(obj)
+            except ValidationError:
+                continue
+        if isinstance(obj, list) and obj:
+            first = obj[0]
+            if isinstance(first, dict):
+                try:
+                    return LlmRecommendationPayload.model_validate(first)
+                except ValidationError:
+                    continue
+    return None
+
+
 def _fallback_to_rules(state: GraphState) -> dict[str, object]:
     snap = MetricSnapshot.model_validate(state.snapshot)
     anoms = [Anomaly.model_validate(a) for a in state.anomalies]
@@ -106,7 +136,6 @@ def make_llm_node(thresholds: ThresholdConfig):
             base_url="https://openrouter.ai/api/v1",
             temperature=0.2,
         )
-        structured = llm.with_structured_output(LlmRecommendationPayload)
         payload = json.dumps(
             {
                 "metrics": snap.model_dump(mode="json"),
@@ -118,16 +147,26 @@ def make_llm_node(thresholds: ThresholdConfig):
         messages = [
             SystemMessage(
                 content=(
-                    "Tu es un ingénieur SRE. Propose un résumé clair et des actions "
-                    "opérationnelles (charge, ressources, services, réseau). Réponds "
-                    "uniquement via le schéma structuré attendu."
+                    "Tu es un ingénieur SRE. Réponds uniquement avec un objet JSON "
+                    "valide (pas de markdown, pas de texte hors JSON). "
+                    'Clés obligatoires : "summary" (string), "recommendations" '
+                    "(array de strings, actions priorisées). "
+                    "Exemple : "
+                    '{"summary":"...","recommendations":["action 1","action 2"]}'
                 ),
             ),
             HumanMessage(content=payload),
         ]
         try:
-            out = structured.invoke(messages)
-            if not isinstance(out, LlmRecommendationPayload):
+            ai = llm.invoke(messages)
+            raw = ai.content
+            if not isinstance(raw, str):
+                raw = str(raw)
+            out = _parse_llm_json_content(raw)
+            if out is None:
+                logger.warning(
+                    "Réponse LLM non JSON exploitable (OpenRouter) — repli sur les règles.",
+                )
                 return _fallback_to_rules(state)
             return {
                 "recommendations": out.recommendations,
