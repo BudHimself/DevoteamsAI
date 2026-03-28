@@ -12,5 +12,6 @@ class LineReport(BaseModel):
 
 
 class AggregatedPipelineOutput(BaseModel):
+    rows_analyzed: int
     reports: list[LineReport]
     global_summary: str

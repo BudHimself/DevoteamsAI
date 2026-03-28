@@ -24,7 +24,7 @@ flowchart LR
 3. **Routage** : si `len(anomalies) > 1` → branche **LLM** ; sinon → branche **règles**.
 4. **LLM** : appel OpenAI-compatible vers `https://openrouter.ai/api/v1` avec sortie structurée (résumé + liste d’actions). Si la clé API est absente ou en cas d’erreur, **repli automatique** sur les mêmes règles que la branche « règles ».
 5. **report** : construction d’un [`LineReport`](../src/devoteam_test/models/report.py) par ligne.
-6. **CLI** : boucle sur tout le tableau JSON ; sortie agrégée [`AggregatedPipelineOutput`](../src/devoteam_test/models/report.py) (liste de rapports + `global_summary`).
+6. **CLI** : boucle sur tout le tableau JSON ; sortie agrégée [`AggregatedPipelineOutput`](../src/devoteam_test/models/report.py) : seules les **lignes avec au moins une anomalie** apparaissent dans `reports` (les mesures nominales sont traitées mais omises pour réduire le volume). Le champ `rows_analyzed` indique le nombre total de lignes lues.
 
 ## Configuration des seuils (YAML)
 
@@ -48,8 +48,9 @@ Copier [`.env.example`](../.env.example) vers `.env` et renseigner les valeurs. 
 
 Racine :
 
-- **`reports`** : liste d’objets par mesure, avec `timestamp`, `anomalies` (liste avec `code`, `message`, `severity`, `field`), `recommendations`, `summary`, `recommendation_source` (`llm` \| `rules` \| `none`).
-- **`global_summary`** : synthèse sur l’ensemble du fichier (nombre de mesures, anomalies cumulées, lignes avec recommandations **effectivement** produites par le LLM — en repli, la source reste `rules`).
+- **`rows_analyzed`** : nombre total de mesures lues dans le fichier d’entrée.
+- **`reports`** : uniquement les mesures ayant **au moins une anomalie** ; chaque objet contient `timestamp`, `anomalies`, `recommendations`, `summary`, `recommendation_source` (`llm` \| `rules` \| `none`).
+- **`global_summary`** : synthèse (lignes lues vs lignes avec anomalie, anomalies cumulées, passages LLM — en repli, la source reste `rules`).
 
 ## Exécution
 

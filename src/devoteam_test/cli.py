@@ -30,13 +30,15 @@ def _default_paths() -> tuple[Path, Path]:
     return rapport, thresholds
 
 
-def _global_summary(reports: list[LineReport]) -> str:
-    n = len(reports)
+def _global_summary(rows_analyzed: int, reports: list[LineReport]) -> str:
+    n_reports = len(reports)
+    nominal = rows_analyzed - n_reports
     total = sum(len(r.anomalies) for r in reports)
     llm_rows = sum(1 for r in reports if r.recommendation_source == "llm")
     return (
-        f"{n} mesure(s) traitée(s) ; {total} anomalie(s) cumulées ; "
-        f"{llm_rows} ligne(s) avec recommandations issues du LLM."
+        f"{rows_analyzed} mesure(s) lues ; {n_reports} ligne(s) avec anomalie(s) "
+        f"({nominal} ligne(s) nominale(s) exclues de la sortie) ; "
+        f"{total} anomalie(s) cumulée(s) ; {llm_rows} ligne(s) avec recommandations LLM."
     )
 
 
@@ -59,19 +61,27 @@ def main() -> None:
     graph = build_graph(thresholds)
 
     reports: list[LineReport] = []
+    rows_analyzed = 0
     for row in raw:
         if not isinstance(row, dict):
             logger.error("Chaque entrée du rapport doit être un objet JSON.")
             sys.exit(1)
+        rows_analyzed += 1
         out = graph.invoke(GraphState(snapshot=row))
         final = _state_from_invoke(out)
         lr = final.line_report
         if lr is None:
             logger.error("Sortie du graphe invalide : line_report manquant.")
             sys.exit(1)
-        reports.append(LineReport.model_validate(lr))
+        line_report = LineReport.model_validate(lr)
+        if line_report.anomalies:
+            reports.append(line_report)
 
-    agg = AggregatedPipelineOutput(reports=reports, global_summary=_global_summary(reports))
+    agg = AggregatedPipelineOutput(
+        rows_analyzed=rows_analyzed,
+        reports=reports,
+        global_summary=_global_summary(rows_analyzed, reports),
+    )
     sys.stdout.write(agg.model_dump_json(indent=2, ensure_ascii=False))
     sys.stdout.write("\n")
 
