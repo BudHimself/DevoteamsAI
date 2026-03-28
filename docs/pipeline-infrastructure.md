@@ -54,7 +54,7 @@ Racine :
 
 ## Exécution
 
-Prérequis : [uv](https://docs.astral.sh/uv/), dépendances installées.
+Prérequis : [uv](https://docs.astral.sh/uv/), **Python 3.12.x** (voir [`pyproject.toml`](../pyproject.toml) et [`.python-version`](../.python-version)), dépendances installées.
 
 ```bash
 uv sync --all-groups

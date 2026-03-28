@@ -2,7 +2,7 @@
 name = "devoteam-test"
 version = "0.1.0"
 description = "Pipeline LangGraph : détection d'anomalies et recommandations (OpenRouter)"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "langgraph>=0.2.40",
     "langchain-core>=0.3.0",
