@@ -1,0 +1,41 @@
+version: 1
+
+numeric:
+  cpu_usage:
+    max: 80
+    severity: high
+  memory_usage:
+    max: 85
+    severity: high
+  latency_ms:
+    max: 200
+    severity: medium
+  disk_usage:
+    max: 90
+    severity: high
+  io_wait:
+    max: 10
+    severity: medium
+  error_rate:
+    max: 0.05
+    severity: high
+  temperature_celsius:
+    max: 75
+    severity: high
+  network_in_kbps:
+    max: 5000
+    severity: medium
+  network_out_kbps:
+    max: 5000
+    severity: medium
+  thread_count:
+    max: 200
+    severity: low
+  active_connections:
+    max: 100
+    severity: medium
+
+services:
+  status_severity:
+    degraded: medium
+    offline: high
