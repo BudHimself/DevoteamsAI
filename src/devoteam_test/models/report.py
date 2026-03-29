@@ -7,6 +7,7 @@ class LineReport(BaseModel):
     timestamp: str
     anomalies: list[Anomaly]
     recommendations: list[str]
+    rule_based_recommendations: list[str]
     summary: str
     recommendation_source: str
 

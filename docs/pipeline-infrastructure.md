@@ -75,7 +75,7 @@ Copier [`.env.example`](../.env.example) vers `.env` et renseigner les valeurs. 
 Racine :
 
 - **`rows_analyzed`** : nombre total de mesures lues dans le fichier d’entrée.
-- **`reports`** : uniquement les mesures ayant **au moins une anomalie** ; chaque objet contient `timestamp`, `anomalies`, `recommendations`, `summary`, `recommendation_source` (`llm` \| `rules` \| `none`).
+- **`reports`** : uniquement les mesures ayant **au moins une anomalie** ; chaque objet contient `timestamp`, `anomalies`, `recommendations` (jeu **effectif** : règles si branche règles ou repli, sinon sortie LLM), **`rule_based_recommendations`** (toujours les recommandations **déterministes** dérivées des anomalies, y compris quand le LLM a été appelé — pour comparaison et traçabilité), `summary`, `recommendation_source` (`llm` \| `rules` \| `none`).
 - **`global_summary`** : synthèse (lignes lues vs lignes avec anomalie, anomalies cumulées, passages LLM — en repli, la source reste `rules`).
 
 ## Exécution
