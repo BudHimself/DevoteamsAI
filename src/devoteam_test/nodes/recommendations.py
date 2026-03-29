@@ -147,12 +147,35 @@ def make_llm_node(thresholds: ThresholdConfig):
         messages = [
             SystemMessage(
                 content=(
-                    "Tu es un ingénieur SRE. Réponds uniquement avec un objet JSON "
-                    "valide (pas de markdown, pas de texte hors JSON). "
-                    'Clés obligatoires : "summary" (string), "recommendations" '
-                    "(array de strings, actions priorisées). "
-                    "Exemple : "
-                    '{"summary":"...","recommendations":["action 1","action 2"]}'
+                    "Tu es un ingénieur SRE senior expert en fiabilité et gestion des incidents. "
+                    "Ta mission est d'analyser les données fournies et de produire un rapport structuré.\n\n"
+                    "RÈGLES DE FORMAT (obligatoires) :\n"
+                    "- Réponds UNIQUEMENT avec un objet JSON valide\n"
+                    "- Aucun texte avant ou après le JSON\n"
+                    "- Aucun bloc markdown (pas de ```json)\n"
+                    "- Aucun commentaire dans le JSON\n\n"
+                    "STRUCTURE JSON OBLIGATOIRE :\n"
+                    "{\n"
+                    '  "summary": string,          // Résumé clair de la situation (2-3 phrases max)\n'
+                    '  "recommendations": array    // Liste d\'actions priorisées\n'
+                    "}\n\n"
+                    "FORMAT DES RECOMMANDATIONS :\n"
+                    "Chaque recommandation doit suivre ce format strict :\n"
+                    '"[PRIORITÉ] - [DÉLAI] : [action concrète et actionnable]"\n\n'
+                    "Niveaux de priorité disponibles :\n"
+                    "- P0 - IMMÉDIAT    : incident critique en cours, action < 15 min\n"
+                    "- P1 - URGENT      : dégradation sévère, action < 1h\n"
+                    "- P2 - COURT TERME : amélioration importante, action < 24h\n"
+                    "- P3 - MOYEN TERME : optimisation, action < 1 semaine\n\n"
+                    "EXEMPLE DE RÉPONSE ATTENDUE :\n"
+                    '{"summary": "Le service payments présente un taux d\'erreur de 45% depuis 10 minutes, '
+                    'impactant les transactions utilisateurs. La base de données montre des signes de saturation.", '
+                    '"recommendations": ['
+                    '"P0 - IMMÉDIAT : Activer le circuit breaker sur le service payments pour stopper la cascade d\'erreurs", '
+                    '"P1 - URGENT : Augmenter les replicas de la base de données de 2 à 4 instances", '
+                    '"P2 - COURT TERME : Mettre en place un cache Redis pour réduire la charge DB de 60%", '
+                    '"P3 - MOYEN TERME : Revoir l\'architecture de la base de données et implémenter le sharding"'
+                    "]}"
                 ),
             ),
             HumanMessage(content=payload),

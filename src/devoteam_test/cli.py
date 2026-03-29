@@ -25,7 +25,7 @@ def _state_from_invoke(result: object) -> GraphState:
 
 def _default_paths() -> tuple[Path, Path]:
     root = Path.cwd()
-    rapport = Path(os.environ.get("RAPPORT_PATH", root / "rapport_short.json"))
+    rapport = Path(os.environ.get("RAPPORT_PATH", root / "rapport.json"))
     thresholds = Path(os.environ.get("THRESHOLDS_PATH", root / "config" / "thresholds.yaml"))
     return rapport, thresholds
 
@@ -51,9 +51,8 @@ def _global_summary(rows_analyzed: int, reports: list[LineReport]) -> str:
         f"{rows_analyzed} mesure(s) lues ; {n_reports} ligne(s) avec anomalie(s) "
         f"({nominal} ligne(s) nominale(s) exclues de la sortie) ; "
         f"{total} anomalie(s) cumulée(s) ; "
-        f"{rules_rows} ligne(s) dont les recommandations effectives proviennent des règles métier "
-        f"(branche règles ou repli LLM) ; "
-        f"{llm_rows} ligne(s) dont les recommandations effectives proviennent du LLM."
+        f"{rules_rows} ligne(s) dont les recommandations proviennent des règles métier ;"
+        f"{llm_rows} ligne(s) dont les recommandations proviennent du LLM."
     )
     if other_rows:
         return (

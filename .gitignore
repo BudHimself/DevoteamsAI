@@ -11,3 +11,4 @@ build/
 .env
 *.egg
 output.json
+rapport_short.json

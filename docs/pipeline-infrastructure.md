@@ -30,17 +30,6 @@ flowchart LR
 
 Après la détection d’anomalies, le pipeline doit proposer des **actions concrètes**. Deux modes de production coexistent, selon une **règle de routage explicite** :
 
-| Mode | Quand ? | Rôle |
-|------|---------|------|
-| **Règles métier** | **0 ou 1** anomalie sur la mesure (ligne) | Messages déterministes, alignés sur les types d’anomalies (métrique, service, etc.). |
-| **LLM** (OpenRouter) | **Plus d’une** anomalie sur la même mesure | Synthèse et priorités sur un contexte multi-signaux. |
-
-**Pourquoi ne pas tout faire au LLM ?** Les appels à un modèle ont un **coût**, une **latence** et une part d’**imprévisibilité**. Lorsqu’un seul signal sort du cadre défini par le YAML, une réponse **codifiée** suffit souvent : elle est **reproductible**, **auditable** en revue de code et immédiate à déployer à grande échelle.
-
-**Pourquoi ne pas tout faire aux règles ?** Dès que **plusieurs** anomalies coexistent, les causes peuvent être **liées** (effet domino, charge + latence + service dégradé). Enchaîner des messages génériques par anomalie donne une liste **plate** ; un LLM peut **ordonner**, **regrouper** et formuler un plan d’action **global** tout en restant contraint par un format JSON de sortie.
-
-En cas d’**indisponibilité** du LLM (clé absente, erreur réseau, réponse non JSON exploitable), le pipeline **repli** automatiquement sur les mêmes **règles métier**, pour garantir une sortie toujours exploitable.
-
 La détection produit une **liste d’anomalies** par mesure (chaque dépassement de seuil configuré ou statut de service anormal y figure comme une entrée). Le routage des recommandations suit une logique volontairement **simple et auditable**.
 
 ### Cas « règles métier » : au plus une anomalie (0 ou 1 « seuil » franchi au sens métier)
