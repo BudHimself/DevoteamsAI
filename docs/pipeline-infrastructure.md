@@ -21,16 +21,29 @@ flowchart LR
 
 1. **ingest** : validation Pydantic d’une mesure (`MetricSnapshot`).
 2. **detect** : comparaison aux seuils du fichier [`config/thresholds.yaml`](../config/thresholds.yaml) (métriques numériques + états de services).
-3. **Routage** : si **plus d’une** anomalie est détectée sur la mesure → branche **LLM** ; sinon (0 ou 1 anomalie) → branche **règles** (justification détaillée dans la section *Choix métier : règles vs LLM* ci-dessous).
+3. **Routage** : si **plus d’une** anomalie est détectée sur la mesure → branche **LLM** ; sinon (0 ou 1 anomalie) → branche **règles** (voir [Recommandations](#recommandations)).
 4. **LLM** : appel OpenAI-compatible vers `https://openrouter.ai/api/v1` ; la réponse est interprétée comme JSON (objet `summary` + `recommendations`, éventuellement dans un bloc Markdown). Si le parsing échoue ou si la clé API est absente, **repli** sur les règles déterministes.
 5. **report** : construction d’un [`LineReport`](../src/devoteam_test/models/report.py) par ligne.
 6. **CLI** : boucle sur tout le tableau JSON ; sortie agrégée [`AggregatedPipelineOutput`](../src/devoteam_test/models/report.py) : seules les **lignes avec au moins une anomalie** apparaissent dans `reports` (les mesures nominales sont traitées mais omises pour réduire le volume). Le champ `rows_analyzed` indique le nombre total de lignes lues.
 
-## Choix métier : règles vs LLM
+## Recommandations
 
-La détection produit une **liste d’anomalies** par mesure (chaque dépassement de seuil configuré ou statut de service anormal y figure comme une entrée). Le routage des recommandations suit une logique volontairement simple et auditable.
+Après la détection d’anomalies, le pipeline doit proposer des **actions concrètes**. Deux modes de production coexistent, selon une **règle de routage explicite** :
 
-### Lorsqu’au plus une anomalie est présente (0 ou 1 « seuil » franchi au sens métier)
+| Mode | Quand ? | Rôle |
+|------|---------|------|
+| **Règles métier** | **0 ou 1** anomalie sur la mesure (ligne) | Messages déterministes, alignés sur les types d’anomalies (métrique, service, etc.). |
+| **LLM** (OpenRouter) | **Plus d’une** anomalie sur la même mesure | Synthèse et priorités sur un contexte multi-signaux. |
+
+**Pourquoi ne pas tout faire au LLM ?** Les appels à un modèle ont un **coût**, une **latence** et une part d’**imprévisibilité**. Lorsqu’un seul signal sort du cadre défini par le YAML, une réponse **codifiée** suffit souvent : elle est **reproductible**, **auditable** en revue de code et immédiate à déployer à grande échelle.
+
+**Pourquoi ne pas tout faire aux règles ?** Dès que **plusieurs** anomalies coexistent, les causes peuvent être **liées** (effet domino, charge + latence + service dégradé). Enchaîner des messages génériques par anomalie donne une liste **plate** ; un LLM peut **ordonner**, **regrouper** et formuler un plan d’action **global** tout en restant contraint par un format JSON de sortie.
+
+En cas d’**indisponibilité** du LLM (clé absente, erreur réseau, réponse non JSON exploitable), le pipeline **repli** automatiquement sur les mêmes **règles métier**, pour garantir une sortie toujours exploitable.
+
+La détection produit une **liste d’anomalies** par mesure (chaque dépassement de seuil configuré ou statut de service anormal y figure comme une entrée). Le routage des recommandations suit une logique volontairement **simple et auditable**.
+
+### Cas « règles métier » : au plus une anomalie (0 ou 1 « seuil » franchi au sens métier)
 
 Quand **aucune** anomalie n’est détectée, le rapport indique un état nominal. Quand **une seule** anomalie est détectée — par exemple un unique indicateur au-dessus du pli YAML, ou un seul service en état dégradé selon la configuration — les recommandations sont générées par des **règles métier déterministes** (templates et messages associés au type d’anomalie).
 
@@ -40,7 +53,7 @@ Quand **aucune** anomalie n’est détectée, le rapport indique un état nomina
 - **Traçabilité** : le lien entre l’anomalie détectée et la recommandation est direct, reproductible et revue de code possible sans dépendre d’un modèle probabiliste.
 - **Adéquation opérationnelle** : un signal isolé correspond souvent à des **playbooks** connus (surveiller une métrique, investiguer un service nommé, envisager un scale-out ciblé). Les règles codifient ces réponses standard sans sur-ingénierie.
 
-### Lorsqu’il y a plusieurs anomalies sur la même mesure
+### Cas « LLM » : plusieurs anomalies sur la même mesure
 
 Dès que **plus d’une** anomalie est détectée sur **la même ligne** (plusieurs seuils dépassés, ou combinaison métriques + services, etc.), le pipeline envoie le contexte (métriques + liste d’anomalies) à un **LLM** via OpenRouter.
 
