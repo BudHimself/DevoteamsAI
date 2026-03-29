@@ -65,7 +65,7 @@ Chemins optionnels :
 
 - `RAPPORT_PATH` : fichier JSON entrée (défaut : `rapport.json` à la racine du répertoire courant).
 - `THRESHOLDS_PATH` : fichier YAML des seuils (défaut : `config/thresholds.yaml`).
-- `OUTPUT_PATH` : fichier JSON de sortie. Si la variable n’est pas définie, le rapport est écrit dans `pipeline_output.json` (répertoire courant). Les répertoires parents sont créés si besoin. La valeur `-` force l’écriture sur **stdout** (utile pour un pipe).
+- `OUTPUT_PATH` : fichier JSON de sortie. Si la variable n’est pas définie, le rapport est écrit dans `output.json` (répertoire courant). Les répertoires parents sont créés si besoin. La valeur `-` force l’écriture sur **stdout** (utile pour un pipe).
 
 Les commandes équivalentes sont regroupées dans le [Makefile](../Makefile) : `make help`.
 

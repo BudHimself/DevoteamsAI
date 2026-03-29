@@ -33,7 +33,7 @@ def _default_paths() -> tuple[Path, Path]:
 def _resolve_output_destination() -> Path | None:
     raw = os.environ.get("OUTPUT_PATH")
     if raw is None:
-        return Path.cwd() / "pipeline_output.json"
+        return Path.cwd() / "output.json"
     stripped = raw.strip()
     if stripped == "-":
         return None

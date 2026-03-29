@@ -10,4 +10,4 @@ build/
 *.egg-info/
 .env
 *.egg
-pipeline_output.json
+output.json
