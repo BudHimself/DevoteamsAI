@@ -25,7 +25,7 @@ def _state_from_invoke(result: object) -> GraphState:
 
 def _default_paths() -> tuple[Path, Path]:
     root = Path.cwd()
-    rapport = Path(os.environ.get("RAPPORT_PATH", root / "rapport.json"))
+    rapport = Path(os.environ.get("RAPPORT_PATH", root / "rapport_short.json"))
     thresholds = Path(os.environ.get("THRESHOLDS_PATH", root / "config" / "thresholds.yaml"))
     return rapport, thresholds
 
@@ -45,11 +45,22 @@ def _global_summary(rows_analyzed: int, reports: list[LineReport]) -> str:
     nominal = rows_analyzed - n_reports
     total = sum(len(r.anomalies) for r in reports)
     llm_rows = sum(1 for r in reports if r.recommendation_source == "llm")
-    return (
+    rules_rows = sum(1 for r in reports if r.recommendation_source == "rules")
+    other_rows = n_reports - llm_rows - rules_rows
+    base = (
         f"{rows_analyzed} mesure(s) lues ; {n_reports} ligne(s) avec anomalie(s) "
         f"({nominal} ligne(s) nominale(s) exclues de la sortie) ; "
-        f"{total} anomalie(s) cumulée(s) ; {llm_rows} ligne(s) avec recommandations LLM."
+        f"{total} anomalie(s) cumulée(s) ; "
+        f"{rules_rows} ligne(s) dont les recommandations effectives proviennent des règles métier "
+        f"(branche règles ou repli LLM) ; "
+        f"{llm_rows} ligne(s) dont les recommandations effectives proviennent du LLM."
     )
+    if other_rows:
+        return (
+            f"{base} ({other_rows} ligne(s) avec recommendation_source inattendu "
+            f"(hors llm/rules), à vérifier.)"
+        )
+    return base
 
 
 def main() -> None:
